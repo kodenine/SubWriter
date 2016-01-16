@@ -1,0 +1,9 @@
+SCC = This is a Source Code Control file
+
+[DVDTools.sln]
+SCC_Aux_Path = "\\roth-server\CodeRepository"
+SCC_Project_Name = "$/Source/SubWriter", BEKAAAAA
+
+[subwriter.csproj]
+SCC_Aux_Path = "\\roth-server\CodeRepository"
+SCC_Project_Name = "$/Source/SubWriter", BEKAAAAA
