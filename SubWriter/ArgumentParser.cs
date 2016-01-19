@@ -31,7 +31,7 @@ namespace Subwriter
             result.Success = true;
             result.ValidationMessage = null;
 
-            if ( _args["h"] != null && _args["help"] != null )
+            if ( _args["h"] == null && _args["help"] == null )
             {
                 string[] validSubtitleAbbrivations = new string[] { "str", "sv", "mdvd", "stl", "txt" };
 

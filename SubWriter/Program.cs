@@ -6,6 +6,7 @@ using CommandLine.Utility;
 using System.Text.RegularExpressions;
 
 using QuartzTypeLib;
+using System.Reflection;
 
 namespace Subwriter
 {
@@ -20,8 +21,11 @@ namespace Subwriter
 		// [STAThread]
 		static void Main(string[] args)
 		{
-			// Command line parsing
-			Arguments commandLineArgs = new Arguments(args);
+            string versionNumber = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            Console.WriteLine( $"subwriter v{versionNumber}" );
+
+            // Command line parsing
+            Arguments commandLineArgs = new Arguments(args);
 
             ArgumentParser subWriterArgumentParser = new ArgumentParser( commandLineArgs );
 
@@ -49,6 +53,15 @@ namespace Subwriter
 
         private static void ProcessArguments( SubtitleArguments subWriterArguments )
         {
+            Console.WriteLine( $"Processing {subWriterArguments.Filenames.Count} file paths" );
+            Console.WriteLine( $"Writing chapter file to '{subWriterArguments.ChapterFileName}'" );
+            Console.WriteLine( $"Writing subtitle file to '{subWriterArguments.SubtitleFileName}'" );
+
+            if ( subWriterArguments.Scenalyzer )
+            {
+                Console.WriteLine( "Using scenalyzer file format" );
+            }
+
             VideoProcessor subwriter = new VideoProcessor( subWriterArguments );
             subwriter.Status += ConsoleWriteStatus;
             bool success = subwriter.Process();

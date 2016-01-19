@@ -19,7 +19,7 @@
     <RemoteDebugEnabled>false</RemoteDebugEnabled>
     <RemoteDebugMachine />
     <StartAction>Project</StartAction>
-    <StartArguments>/F:D:\DVD Projects\Spring 2011\raw_dv\%2a.avi /scenalyzer</StartArguments>
+    <StartArguments>"/F:D:\DVD Projects\Spring 2011\raw_dv\%2a.avi" /scenalyzer</StartArguments>
     <StartPage />
     <StartProgram />
     <StartURL />

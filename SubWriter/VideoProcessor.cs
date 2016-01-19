@@ -5,6 +5,8 @@ using System.IO;
 using System.Security;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace Subwriter
 {
@@ -43,7 +45,7 @@ namespace Subwriter
             String currentDirectory = Environment.CurrentDirectory;
 
             //Create recursively a list with all the files complying with the criteria
-            List<FileInfo> files = new List<FileInfo>();
+            List<FileInfo> videoFileInfos = new List<FileInfo>();
 
             foreach (string fileName in _args.Filenames )
             {
@@ -53,10 +55,15 @@ namespace Subwriter
                 var filename = Path.GetFileName( trimmedFileName );
                 var fileDirectory = Path.GetDirectoryName( trimmedFileName );
 
-                files.AddRange( GetFiles( fileDirectory, trimmedFileName, _args.Recursive ) );
+                if ( String.IsNullOrWhiteSpace( fileDirectory ) )
+                {
+                    fileDirectory = currentDirectory;
+                }
+
+                videoFileInfos.AddRange( GetFiles( fileDirectory, filename, _args.Recursive ) );
             }
 
-            if ( files.Count == 0 )
+            if ( videoFileInfos.Count == 0 )
             {
                 success = false;
                 UpdateStatus( "no files to process" );
@@ -85,65 +92,88 @@ namespace Subwriter
                     string previousFormattedFilename = null;
 
                     // Sorts the values of the list
-                    _args.Filenames.Sort();
-                    foreach ( string filename in _args.Filenames )
+                    var orderedVideoFileInfos = videoFileInfos.OrderBy( videoFileInfo => videoFileInfo.FullName );
+                    foreach ( FileInfo videoFileInfo in orderedVideoFileInfos )
                     {
                         try
                         {
+                            UpdateStatus( $"Processing '{videoFileInfo.Name}'" );
+
                             FilgraphManager filterGraphManager = null;
                             IMediaPosition mediaPosition = null;
                             filterGraphManager = new FilgraphManager();
-                            filterGraphManager.RenderFile( filename );
+                            filterGraphManager.RenderFile( videoFileInfo.FullName );
+
+                            // Find file's frame rate
+                            double fileFrameRate = 1 / ((IBasicVideo)filterGraphManager).AvgTimePerFrame;
+                            
                             mediaPosition = filterGraphManager as IMediaPosition;
-                            string formattedFilename = Path.GetFileNameWithoutExtension( filename );
+                            string formattedFilename = Path.GetFileNameWithoutExtension( videoFileInfo.Name );
                             if ( _args.Scenalyzer )
                             {
                                 formattedFilename = ScenalyzerFormat( formattedFilename );
                             }
                             fileCount++;
                             FrameInfo Start = new FrameInfo();
-                            Start.FrameRate = _args.FrameRate;
+                            Start.FrameRate = fileFrameRate;
                             Start.Duration = totalFrameInfo.Duration;
                             Start.Duration += SECONDS_DELAY_BEFORE_SUBTITLE_DISPLAY;
                             FrameInfo End = new FrameInfo();
-                            End.FrameRate = _args.FrameRate;
+                            End.FrameRate = fileFrameRate;
                             End.Duration = Start.Duration + _args.SubDuration;
-
+                            
                             bool writeMarkers = (_args.IncludeDuplicates || previousFormattedFilename != formattedFilename);
 
                             if ( writeMarkers )
                             {
                                 chapterWriter.WriteChapter( totalFrameInfo );
+                                UpdateStatus( $"Writing chapter at {totalFrameInfo.Duration} seconds" );
                             }
+                            else
+                            {
+                                UpdateStatus( "Skipped" );
+                            }
+
                             totalFrameInfo.Duration += mediaPosition.Duration;
 
                             if ( writeMarkers )
                             {
                                 if ( End.Duration > totalFrameInfo.Duration )
                                 {
-                                    End.Duration = totalFrameInfo.Duration - (1 / _args.FrameRate);
+                                    End.Duration = totalFrameInfo.Duration - (1 / fileFrameRate);
                                 }
 
                                 subtitleWriter.WriteSubtitle( formattedFilename, subCount, Start, End );
+                                subCount++;
+                                UpdateStatus( $"Writing subtitle {formattedFilename} at {Start.Duration:#.##} to {End.Duration:#.##}" );
                             }
-                            subCount++;
+                            
                             previousFormattedFilename = formattedFilename;
-
+                            filterGraphManager.Stop();
                             empty = false;
-                            if ( mediaPosition != null ) mediaPosition = null;
-                            if ( filterGraphManager != null ) filterGraphManager = null;
+
+                            if ( mediaPosition != null )
+                            {
+                                mediaPosition = null;
+                            }
+                            if ( filterGraphManager != null )
+                            {
+                                Marshal.FinalReleaseComObject( filterGraphManager );
+                                filterGraphManager = null;
+                            }
                         }
                         catch ( SecurityException ex )
                         {
-                            UpdateStatus( $"File, '{filename}' was unable to be opened due to a security exception: {ex.Message}" );
+                            UpdateStatus( $"File, '{videoFileInfo.FullName}' was unable to be opened due to a security exception: {ex.Message}" );
                         }
                         catch ( FileNotFoundException )
                         {
-                            UpdateStatus( $"File, '{filename}' was not found" );
+                            UpdateStatus( $"File, '{videoFileInfo.FullName}' was not found" );
                         }
                     }
-                    totalFrameInfo.Duration -= (1 /_args.FrameRate);
+                    totalFrameInfo.Duration -= .2;
                     chapterWriter.WriteChapter( totalFrameInfo );
+                    
                     if ( empty == true )
                     {
                         success = false;
@@ -187,18 +217,23 @@ namespace Subwriter
         // Format Scenalyzer named files
         private string ScenalyzerFormat( string ScenalyzerFileName )
         {
-            string processing = ScenalyzerFileName.Replace( "scene'", "" );
+            string processing = ScenalyzerFileName.Replace( "scene", "" );
+            processing = processing.Replace( "'", "" );
             processing = processing.Replace( "_joined", "" );
             string year = processing.Substring( 0, 4 );
             string month = processing.Substring( 4, 2 );
             string day = processing.Substring( 6, 2 );
-            string mytime = processing.Substring( 9, 8 );
-            mytime = mytime.Replace( ".", ":" );
-            if ( Regex.Match( mytime, "##:##:##" ).Success == false )
+            string mytime = "00:00:00";
+            if ( processing.Length > 8 )
             {
-                mytime = "00:00:00";
+                mytime = processing.Substring( 9, 8 );
+                mytime = mytime.Replace( ".", ":" );
+                if ( Regex.Match( mytime, "##:##:##" ).Success == false )
+                {
+                    mytime = "00:00:00";
+                }
             }
-            string title = "";
+            string title = String.Empty;
             if ( processing.Length > 17 )
             {
                 title = " - " + processing.Substring( 17 );
@@ -206,7 +241,8 @@ namespace Subwriter
             // string myDateTimeValue = "2/16/1992 12:15:12";
             string myDateTimeValue = month + "/" + day + "/" + year + " " + mytime;
             DateTime myDateTime = Convert.ToDateTime( myDateTimeValue );
-            processing = String.Format( "{0:MMMM} {0:dd}, {0:yyyy}{1}", myDateTime, title );
+            // processing = String.Format( "{0:MMMM} {0:dd}, {0:yyyy}{1}", myDateTime, title );
+            processing = $"{myDateTime:MMMM} {myDateTime:dd}, {myDateTime:yyyy}";
             return processing;
         }
         
