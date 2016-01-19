@@ -90,23 +90,38 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArgumentParser.cs" />
-    <Compile Include="Arguments.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="AssemblyInfo.cs">
+    <Compile Include="ChapterWriterFactory.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="ChapterWriter.cs" />
     <Compile Include="FrameInfo.cs" />
     <Compile Include="FrameRateType.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
     <Compile Include="SubtitleArguments.cs" />
     <Compile Include="SubtitleWriter.cs" />
+    <Compile Include="SubtitleWriterFactory.cs" />
+    <Compile Include="Utility\Arguments.cs" />
     <Compile Include="VideoProcessor.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="Examples\Subtitles\subtitle.son" />
+    <None Include="Examples\Subtitles\subtitle.stl" />
     <None Include="README.md" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="drivers\YMPEGSetup000614.exe" />
+    <Content Include="Examples\Subtitles\Adobe Encore DVD.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

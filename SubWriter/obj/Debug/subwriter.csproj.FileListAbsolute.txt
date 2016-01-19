@@ -6,3 +6,4 @@ G:\source\GitHub.com\SubWriter\SubWriter\bin\Debug\subwriter.exe
 G:\source\GitHub.com\SubWriter\SubWriter\bin\Debug\subwriter.pdb
 G:\source\GitHub.com\SubWriter\SubWriter\bin\Debug\Interop.QuartzTypeLib.dll
 G:\source\GitHub.com\SubWriter\SubWriter\obj\Debug\subwriter.csprojResolveAssemblyReference.cache
+G:\source\GitHub.com\SubWriter\subwriter\bin\Debug\subwriter.exe.config

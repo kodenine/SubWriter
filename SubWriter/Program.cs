@@ -14,16 +14,6 @@ namespace Subwriter
 	/// </summary>
 	class Program
 	{
-		//Print Help
-		private static void PrintHelp()
-		{
-			Console.WriteLine("Usage: subwriter [/h|/H]");
-			Console.WriteLine("       subwriter [/r] [/fr:(*NTSC,PAL,##)] [/sfn:(*subtitle.txt)]"); 
-			Console.WriteLine("                 [/cfn:(*chapters.txt)] [/sub:(*str,sv,mdvd,stl,txt)]");
-			Console.WriteLine("                 [/chp:(*ifo,sm)] [/spf:(*auto,filename)]");
-			Console.WriteLine("                 [/scenalyzer] /F:files");
-		}
-
 		/// <summary>
 		/// The main entry point for the application.
 		/// </summary>
@@ -48,29 +38,42 @@ namespace Subwriter
             switch ( subWriterArguments.Action )
             {
                 case SubtitleArguments.ActionType.Process:
-                    VideoProcessor subwriter = new VideoProcessor( subWriterArguments );
-                    subwriter.Status += ConsoleWriteStatus;
-                    bool success = subwriter.Process();
-                    subwriter.Status -= ConsoleWriteStatus;
-
-                    if ( success )
-                    {
-                        Console.WriteLine( "process completed successfully!" );
-                    }
-                    else
-                    {
-                        Console.WriteLine( "process was unsuccessful!" );
-                    }
-
+                    ProcessArguments( subWriterArguments );
                     break;
 
-                case default:
+                default:
                     PrintHelp();
                     break;
             }
 		}
 
-        static void ConsoleWriteStatus( VideoProcessor m, VideoProcessor.StatusEventHandler e )
+        private static void ProcessArguments( SubtitleArguments subWriterArguments )
+        {
+            VideoProcessor subwriter = new VideoProcessor( subWriterArguments );
+            subwriter.Status += ConsoleWriteStatus;
+            bool success = subwriter.Process();
+            subwriter.Status -= ConsoleWriteStatus;
+
+            if ( success )
+            {
+                Console.WriteLine( "process completed successfully!" );
+            }
+            else
+            {
+                Console.WriteLine( "process was unsuccessful!" );
+            }
+        }
+
+        private static void PrintHelp()
+        {
+            Console.WriteLine( "Usage: subwriter [/h|/H]" );
+            Console.WriteLine( "       subwriter [/r] [/fr:(*NTSC,PAL,##)] [/sfn:(*subtitle.txt)]" );
+            Console.WriteLine( "                 [/cfn:(*chapters.txt)] [/sub:(*str,sv,mdvd,stl,txt)]" );
+            Console.WriteLine( "                 [/chp:(*ifo,sm)] [/spf:(*auto,filename)]" );
+            Console.WriteLine( "                 [/scenalyzer] /F:files" );
+        }
+
+        private static void ConsoleWriteStatus( VideoProcessor m, VideoProcessor.StatusEventHandler e )
         {
             Console.WriteLine( e.Message );
         }

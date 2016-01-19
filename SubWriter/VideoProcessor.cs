@@ -34,12 +34,11 @@ namespace Subwriter
         {
             _args = args;
         }
-
-
+        
         //Search Function
         public bool Process()
         {
-            bool success = false;
+            bool success = true;
 
             String currentDirectory = Environment.CurrentDirectory;
 
@@ -65,91 +64,97 @@ namespace Subwriter
 
             if ( success )
             {
-
-                bool addDefaultPrefix = !String.IsNullOrEmpty( _args.SubtitlePrefixFilename ) && !_args.SubtitlePrefixFilename.Equals( "auto", StringComparison.OrdinalIgnoreCase );
-                StreamWriter subtileStreamWriter = _args.SubtitleFormat.CreateFile( _args.SubtitleFileName, addDefaultPrefix );
-                StreamWriter chapterStreamWriter = _args.ChapterFormat.CreateFile( _args.ChapterFileName );
-                
-
-                if ( addDefaultPrefix )
+                using ( BaseChapterWriter chapterWriter = _args.ChapterWriterFactory.Create( _args.ChapterFileName ) )
+                using ( BaseSubtitleWriter subtitleWriter = _args.SubtitleWriterFactory.Create( _args.SubtitleFileName ) )
                 {
-                    FileInfo SubtitlePrefix = new FileInfo( _args.SubtitlePrefixFilename );
-                    StreamReader SubtitlePrefixFS = SubtitlePrefix.OpenText();
-                    subtileStreamWriter.Write(SubtitlePrefixFS.ReadToEnd());
-                    SubtitlePrefixFS.Close();
-                }
-            
-                int FileCount = 0;
-                int SubCount = 1;
-                bool bEmpty = true;
-                FrameInfo Total = new FrameInfo();
-                Total.FrameRate = _args.FrameRate;
-                Total.Duration = 0;
-
-                // Sorts the values of the list
-                _args.Filenames.Sort();
-                foreach( string filename in _args.Filenames )
-                { 
-                    try
+                    bool addDefaultPrefix = !String.IsNullOrEmpty( _args.SubtitlePrefixFilename ) && !_args.SubtitlePrefixFilename.Equals( "auto", StringComparison.OrdinalIgnoreCase );
+                    if ( addDefaultPrefix )
                     {
-                        FilgraphManager m_objFilterGraph = null;
-                        IMediaPosition m_objMediaPosition = null;
-                        m_objFilterGraph = new FilgraphManager();
-                        m_objFilterGraph.RenderFile( filename );
-                        m_objMediaPosition = m_objFilterGraph as IMediaPosition;
-                        string formattedFilename = Path.GetFileNameWithoutExtension( filename );
-                        if ( _args.Scenalyzer )
+                        FileInfo SubtitlePrefix = new FileInfo( _args.SubtitlePrefixFilename );
+                        StreamReader SubtitlePrefixFS = SubtitlePrefix.OpenText();
+                        subtitleWriter.Prefix = SubtitlePrefixFS.ReadToEnd();
+                        SubtitlePrefixFS.Close();
+                    }
+
+                    int fileCount = 0;
+                    int subCount = 1;
+                    bool empty = true;
+                    FrameInfo totalFrameInfo = new FrameInfo();
+                    totalFrameInfo.FrameRate = _args.FrameRate;
+                    totalFrameInfo.Duration = 0;
+                    string previousFormattedFilename = null;
+
+                    // Sorts the values of the list
+                    _args.Filenames.Sort();
+                    foreach ( string filename in _args.Filenames )
+                    {
+                        try
                         {
-                            formattedFilename = ScenalyzerFormat( formattedFilename );
+                            FilgraphManager filterGraphManager = null;
+                            IMediaPosition mediaPosition = null;
+                            filterGraphManager = new FilgraphManager();
+                            filterGraphManager.RenderFile( filename );
+                            mediaPosition = filterGraphManager as IMediaPosition;
+                            string formattedFilename = Path.GetFileNameWithoutExtension( filename );
+                            if ( _args.Scenalyzer )
+                            {
+                                formattedFilename = ScenalyzerFormat( formattedFilename );
+                            }
+                            fileCount++;
+                            FrameInfo Start = new FrameInfo();
+                            Start.FrameRate = _args.FrameRate;
+                            Start.Duration = totalFrameInfo.Duration;
+                            Start.Duration += SECONDS_DELAY_BEFORE_SUBTITLE_DISPLAY;
+                            FrameInfo End = new FrameInfo();
+                            End.FrameRate = _args.FrameRate;
+                            End.Duration = Start.Duration + _args.SubDuration;
+
+                            bool writeMarkers = (_args.IncludeDuplicates || previousFormattedFilename != formattedFilename);
+
+                            if ( writeMarkers )
+                            {
+                                chapterWriter.WriteChapter( totalFrameInfo );
+                            }
+                            totalFrameInfo.Duration += mediaPosition.Duration;
+
+                            if ( writeMarkers )
+                            {
+                                if ( End.Duration > totalFrameInfo.Duration )
+                                {
+                                    End.Duration = totalFrameInfo.Duration - (1 / _args.FrameRate);
+                                }
+
+                                subtitleWriter.WriteSubtitle( formattedFilename, subCount, Start, End );
+                            }
+                            subCount++;
+                            previousFormattedFilename = formattedFilename;
+
+                            empty = false;
+                            if ( mediaPosition != null ) mediaPosition = null;
+                            if ( filterGraphManager != null ) filterGraphManager = null;
                         }
-                        FileCount++;
-                        FrameInfo Start = new FrameInfo();
-                        Start.FrameRate = _args.FrameRate;
-                        Start.Duration = Total.Duration;
-                        Start.Duration += SECONDS_DELAY_BEFORE_SUBTITLE_DISPLAY;
-                        FrameInfo End = new FrameInfo();
-                        End.FrameRate = _args.FrameRate;
-                        End.Duration = Start.Duration + _args.SubDuration;
-
-                        WriteChapter(chapterStreamWriter, Total);
-                        Total.Duration += m_objMediaPosition.Duration;
-
-                        if (End.Duration > Total.Duration)
+                        catch ( SecurityException ex )
                         {
-                            End.Duration = Total.Duration - (1 / _args.FrameRate);
+                            UpdateStatus( $"File, '{filename}' was unable to be opened due to a security exception: {ex.Message}" );
                         }
-
-
-                        WriteSubtitles( subtileStreamWriter, formattedFilename, SubCount, Start, End )
-                        //	Start.Duration += m_dSubDuration;
-                        //	End.Duration = Start.Duration + m_dSubDuration - 0.5;
-                        SubCount++;
-                        // }
-                        // Process file for frames and duration
-                        bEmpty = false;
-                        if (m_objMediaPosition != null) m_objMediaPosition = null;
-                        if (m_objFilterGraph != null) m_objFilterGraph = null;
+                        catch ( FileNotFoundException )
+                        {
+                            UpdateStatus( $"File, '{filename}' was not found" );
+                        }
                     }
-                    catch (SecurityException)
+                    totalFrameInfo.Duration -= (1 /_args.FrameRate);
+                    chapterWriter.WriteChapter( totalFrameInfo );
+                    if ( empty == true )
                     {
-                        strResults += "\r\n" + (string)enm.Current + ": Security Exception\r\n\r\n";
+                        success = false;
+                        UpdateStatus( "No matches found!" );
                     }
-                    catch (FileNotFoundException)
+                    else
                     {
-                        strResults += "\r\n" + (string)enm.Current + ": File Not Found Exception\r\n";
+                        UpdateStatus( $"Processed {fileCount} Files!" );
                     }
                 }
-            Total.Duration -= 0.5;
-            WriteChapter(ChapterFS, Total);
-            if (bEmpty == true)
-                Console.WriteLine("No matches found!");
-            else
-                Console.WriteLine(String.Format("Processed {0} Files!\r\n", FileCount));
-            Console.WriteLine(strResults);
-            SubtitleFS.Close();
-            ChapterFS.Close();
-
-            success = true;
+            }
 
             return success;
         }
@@ -204,37 +209,7 @@ namespace Subwriter
             processing = String.Format( "{0:MMMM} {0:dd}, {0:yyyy}{1}", myDateTime, title );
             return processing;
         }
-
-        private void WriteSubtitles( StreamWriter subtileStreamWriter, string formattedFilename, int subNumber, FrameInfo start, FrameInfo end )
-        {
-            switch ( _args.SubtitleFormat.GetType() )
-            {
-                case typeof( StandardSubtitleFormat ):
-                    subtileStreamWriter.WriteLine( "FileName: " + formattedFilename + "\t" );
-                    subtileStreamWriter.WriteLine( String.Format( "Duration: {0:00}:{1:00}:{2:00}.{3:000} to \r\n",
-                        start.Hour, start.Minute, start.Second, start.MilliSecond ) );
-                    break;
-                case typeof( SubripSubtitleFormat ):
-                    subtileStreamWriter.WriteLine( String.Format( "{0}", subNumber ) );
-                    subtileStreamWriter.WriteLine( String.Format( "{0:00}:{1:00}:{2:00},{3:000} --> {4:00}:{5:00}:{6:00},{7:000}",
-                        start.Hour, start.Minute, start.Second, start.MilliSecond,
-                        end.Hour, end.Minute, end.Second, end.MilliSecond ) );
-                    subtileStreamWriter.WriteLine( String.Format( "{0}", formattedFilename ) );
-                    subtileStreamWriter.WriteLine( "" );
-                    break;
-                case typeof( SpruceSubtitleFormat ):
-                    subtileStreamWriter.WriteLine( String.Format( "{0:00}:{1:00}:{2:00}:{3:00},{4:00}:{5:00}:{6:00}:{7:00},{8}",
-                        start.Hour, start.Minute, start.Second, (start.MilliSecond / 10),
-                        end.Hour, end.Minute, end.Second, (end.MilliSecond / 10), formattedFilename ) );
-                    break;
-                case typeof( EncoreSubtitleFormat ):
-                    subtileStreamWriter.WriteLine( String.Format( "{0:00}:{1:00}:{2:00}:{3:00} {4:00}:{5:00}:{6:00}:{7:00} {8}",
-                        start.Hour, start.Minute, start.Second, (start.MilliSecond / 10),
-                        end.Hour, end.Minute, end.Second, (end.MilliSecond / 10), formattedFilename ) );
-                    break;
-            }
-        }
-
+        
         private void UpdateStatus( string message )
         {
             if ( Status != null )

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Subwriter.Properties;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,108 +8,188 @@ using System.Threading.Tasks;
 
 namespace Subwriter
 {
-    public abstract class BaseSubtitleFormat
+    public abstract class BaseSubtitleWriter : IDisposable
     {
-        public string FileExtension { get; set; }
+        private string _filename;
 
-        public StreamWriter CreateFile( string filename, bool addDefaultPrefix )
+        private StreamWriter _subtitleStreamWriter;
+        protected StreamWriter SubtitleStreamWriter
         {
-            FileInfo chapterFile = new FileInfo( filename );
-            StreamWriter chapterFileStream = chapterFile.CreateText();
+            get
+            {
+                if ( _subtitleStreamWriter == null )
+                {
+                    CorrectFileExtension();
+                    FileInfo chapterFile = new FileInfo( _filename );
+                    _subtitleStreamWriter = chapterFile.CreateText();
+                    AddPrefix();
+                }
 
-            return chapterFileStream;
+                return _subtitleStreamWriter;
+            }
         }
 
-        protected virtual void AddPrefixToFileStream( StreamWriter subtitleStreamWriter )
-        { }
+        public string FileExtension { get; set; }
+
+        public string Prefix { get; set; } = String.Empty;
+
+        public BaseSubtitleWriter( string filename )
+        {
+            _filename = filename;
+        }
+
+        public abstract void WriteSubtitle( string formattedFilename, int subNumber, FrameInfo start, FrameInfo end );
+
+        private void CorrectFileExtension()
+        {
+            if ( Path.HasExtension( _filename ) )
+            {
+                _filename = _filename.Replace(
+                    Path.GetExtension( _filename ),
+                    FileExtension );
+            }
+            else
+            {
+                _filename += FileExtension;
+            }
+        }
+
+        private void AddPrefix()
+        {
+            if ( !String.IsNullOrWhiteSpace( Prefix ) )
+            {
+                _subtitleStreamWriter.WriteLine( Prefix );
+            }
+        }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose( bool disposing )
+        {
+            if ( !disposedValue )
+            {
+                if ( disposing )
+                {
+                    // dispose managed state (managed objects).
+                    if ( _subtitleStreamWriter != null )
+                    {
+                        _subtitleStreamWriter.Close();
+                        _subtitleStreamWriter = null;
+                    }
+                }
+
+                // free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // set large fields to null.
+
+                disposedValue = true;
+            }
+        }
+
+        // override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        // ~BaseSubtitleWriter() {
+        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+        //   Dispose(false);
+        // }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose( true );
+            // uncomment the following line if the finalizer is overridden above.
+            // GC.SuppressFinalize(this);
+        }
+        #endregion
     }
 
-    public class StandardSubtitleFormat : BaseSubtitleFormat
+    public class StandardSubtitleWriter : BaseSubtitleWriter
     {
-        public StandardSubtitleFormat()
+        public StandardSubtitleWriter( string filename ) : base( filename )
         {
             FileExtension = ".txt";
         }
+
+        public override void WriteSubtitle( string formattedFilename, int subNumber, FrameInfo start, FrameInfo end )
+        {
+            SubtitleStreamWriter.WriteLine( "FileName: " + formattedFilename + "\t" );
+            SubtitleStreamWriter.WriteLine( String.Format( "Duration: {0:00}:{1:00}:{2:00}.{3:000} to \r\n",
+                start.Hour, start.Minute, start.Second, start.MilliSecond ) );
+        }
     }
 
-    public class SubripSubtitleFormat : BaseSubtitleFormat
+    public class SubripSubtitleWriter : BaseSubtitleWriter
     {
-        public SubripSubtitleFormat()
+        public SubripSubtitleWriter( string filename ) : base( filename )
         {
             FileExtension = ".srt";
         }
+
+        public override void WriteSubtitle( string formattedFilename, int subNumber, FrameInfo start, FrameInfo end )
+        {
+            SubtitleStreamWriter.WriteLine( String.Format( "{0}", subNumber ) );
+            SubtitleStreamWriter.WriteLine( String.Format( "{0:00}:{1:00}:{2:00},{3:000} --> {4:00}:{5:00}:{6:00},{7:000}",
+                start.Hour, start.Minute, start.Second, start.MilliSecond,
+                end.Hour, end.Minute, end.Second, end.MilliSecond ) );
+            SubtitleStreamWriter.WriteLine( String.Format( "{0}", formattedFilename ) );
+            SubtitleStreamWriter.WriteLine( "" );
+        }
     }
 
-    public class SubviewerSubtitleFormat : BaseSubtitleFormat
+    public class SubviewerSubtitleWriter : BaseSubtitleWriter
     {
-        public SubviewerSubtitleFormat()
+        public SubviewerSubtitleWriter( string filename ) : base( filename )
         {
             FileExtension = ".sub";
         }
+
+        public override void WriteSubtitle( string formattedFilename, int subNumber, FrameInfo start, FrameInfo end )
+        {
+            throw new NotImplementedException();
+        }
     }
 
-    public class MicroDvdSubtitleFormat : BaseSubtitleFormat
+    public class MicroDvdSubtitleWriter : BaseSubtitleWriter
     {
-        public MicroDvdSubtitleFormat()
+        public MicroDvdSubtitleWriter( string filename ) : base( filename )
         {
             FileExtension = ".mdvd";
         }
+
+        public override void WriteSubtitle( string formattedFilename, int subNumber, FrameInfo start, FrameInfo end )
+        {
+            throw new NotImplementedException();
+        }
     }
 
-    public class SpruceSubtitleFormat : BaseSubtitleFormat
+    public class SpruceSubtitleWriter : BaseSubtitleWriter
     {
-        public SpruceSubtitleFormat()
+        public SpruceSubtitleWriter( string filename ) : base( filename )
         {
             FileExtension = ".stl";
+            Prefix = Settings.Default.SpruceSubtitlePrefix;
         }
 
-        protected override void AddPrefixToFileStream( StreamWriter subtitleStreamWriter )
+        public override void WriteSubtitle( string formattedFilename, int subNumber, FrameInfo start, FrameInfo end )
         {
-            subtitleStreamWriter.WriteLine( "//Font select and font size" );
-            subtitleStreamWriter.WriteLine( "$FontName       = Arial" );
-            subtitleStreamWriter.WriteLine( "$FontSize       = 30" );
-            subtitleStreamWriter.WriteLine();
-            subtitleStreamWriter.WriteLine( "//Character attributes (global)" );
-            subtitleStreamWriter.WriteLine( "$Bold           = FALSE" );
-            subtitleStreamWriter.WriteLine( "$UnderLined     = FALSE" );
-            subtitleStreamWriter.WriteLine( "$Italic         = FALSE" );
-            subtitleStreamWriter.WriteLine();
-            subtitleStreamWriter.WriteLine( "//Position Control" );
-            subtitleStreamWriter.WriteLine( "$HorzAlign      = Center" );
-            subtitleStreamWriter.WriteLine( "$VertAlign      = Bottom" );
-            subtitleStreamWriter.WriteLine( "$XOffset        = 0" );
-            subtitleStreamWriter.WriteLine( "$YOffset        = 0" );
-            subtitleStreamWriter.WriteLine();
-            subtitleStreamWriter.WriteLine( "//Contrast Control" );
-            subtitleStreamWriter.WriteLine( "$TextContrast           = 15" );
-            subtitleStreamWriter.WriteLine( "$Outline1Contrast       = 8" );
-            subtitleStreamWriter.WriteLine( "$Outline2Contrast       = 15" );
-            subtitleStreamWriter.WriteLine( "$BackgroundContrast     = 0" );
-            subtitleStreamWriter.WriteLine();
-            subtitleStreamWriter.WriteLine( "//Effects Control" );
-            subtitleStreamWriter.WriteLine( "$ForceDisplay   = FALSE" );
-            subtitleStreamWriter.WriteLine( "$FadeIn         = 10" );
-            subtitleStreamWriter.WriteLine( "$FadeOut        = 10" );
-            subtitleStreamWriter.WriteLine();
-            subtitleStreamWriter.WriteLine( "//Other Controls" );
-            subtitleStreamWriter.WriteLine( "$TapeOffset          = FALSE" );
-            subtitleStreamWriter.WriteLine( "//$SetFilePathToken  = <<:>>" );
-            subtitleStreamWriter.WriteLine();
-            subtitleStreamWriter.WriteLine( "//Colors" );
-            subtitleStreamWriter.WriteLine( "$ColorIndex1    = 0" );
-            subtitleStreamWriter.WriteLine( "$ColorIndex2    = 1" );
-            subtitleStreamWriter.WriteLine( "$ColorIndex3    = 2" );
-            subtitleStreamWriter.WriteLine( "$ColorIndex4    = 3" );
-            subtitleStreamWriter.WriteLine();
-            subtitleStreamWriter.WriteLine( "//Subtitles" );
+            SubtitleStreamWriter.WriteLine( String.Format( "{0:00}:{1:00}:{2:00}:{3:00},{4:00}:{5:00}:{6:00}:{7:00},{8}",
+                start.Hour, start.Minute, start.Second, (start.MilliSecond / 10),
+                end.Hour, end.Minute, end.Second, (end.MilliSecond / 10), formattedFilename ) );
         }
     }
 
-    public class EncoreSubtitleFormat : BaseSubtitleFormat
+    public class EncoreSubtitleFormat : BaseSubtitleWriter
     {
-        public EncoreSubtitleFormat()
+        public EncoreSubtitleFormat( string filename ) : base( filename )
         {
             FileExtension = ".txt";
+        }
+
+        public override void WriteSubtitle( string formattedFilename, int subNumber, FrameInfo start, FrameInfo end )
+        {
+            SubtitleStreamWriter.WriteLine( String.Format( "{0:00}:{1:00}:{2:00}:{3:00} {4:00}:{5:00}:{6:00}:{7:00} {8}",
+                start.Hour, start.Minute, start.Second, (start.MilliSecond / 10),
+                end.Hour, end.Minute, end.Second, (end.MilliSecond / 10), formattedFilename ) );
         }
     }
     

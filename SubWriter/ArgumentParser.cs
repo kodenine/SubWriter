@@ -131,17 +131,17 @@ namespace Subwriter
                 switch ( subArg.ToLower() )
                 {
                     case "str":
-                        result.SubtitleFormat = SubtitleFormat.Subrip;
+                        result.SubtitleWriterFactory = new SubtitleWriterFactory<SubripSubtitleWriter>();
                         break;
                     case "sv":
                         goto default;
                     case "mdvd":
                         goto default;
                     case "stl":
-                        result.SubtitleFormat = SubtitleFormat.Spruce;
+                        result.SubtitleWriterFactory = new SubtitleWriterFactory<SpruceSubtitleWriter>();
                         break;
                     case "txt":
-                        result.SubtitleFormat = SubtitleFormat.Encore;
+                        result.SubtitleWriterFactory = new SubtitleWriterFactory<EncoreSubtitleFormat>();
                         break;
                     default:
                         throw new ArgumentException( $"'{subArg}' is not a supported subtitle format!", "sub" );
@@ -149,18 +149,7 @@ namespace Subwriter
             }
             else
             {
-                result.SubtitleFormat = SubtitleFormat.Subrip;
-            }
-
-            if ( Path.HasExtension( result.SubtitleFileName ) )
-            {
-                result.SubtitleFileName = result.SubtitleFileName.Replace(
-                    Path.GetExtension( result.SubtitleFileName ),
-                    result.SubtitleFormat.FileExtension );
-            }
-            else
-            {
-                result.SubtitleFileName += result.SubtitleFormat.FileExtension;
+                result.SubtitleWriterFactory = new SubtitleWriterFactory<SubripSubtitleWriter>();
             }
 
             string framerateArg = (string)_args["fr"];
@@ -198,10 +187,10 @@ namespace Subwriter
                 switch ( chapterFormatArg )
                 {
                     case "ifo":
-                        result.ChapterFormat = new IfoChapterWriter();
+                        result.ChapterWriterFactory = new ChapterWriterFactory<IfoChapterWriter>();
                         break;
                     case "sm":
-                        result.ChapterFormat = new SpruceMaestroChapterWriter();
+                        result.ChapterWriterFactory = new ChapterWriterFactory<SpruceMaestroChapterWriter>();
                         break;
                     default:
                         throw new ArgumentException( $"'{chapterFormatArg}' is not a supported chapter format", "chp" );
@@ -209,18 +198,7 @@ namespace Subwriter
             }
             else
             {
-                result.ChapterFormat = new IfoChapterWriter();
-            }
-
-            if ( Path.HasExtension( result.ChapterFileName ) )
-            {
-                result.ChapterFileName = result.ChapterFileName.Replace(
-                    Path.GetExtension( result.ChapterFileName ),
-                    result.ChapterFormat.FileExtension );
-            }
-            else
-            {
-                result.ChapterFileName += result.ChapterFormat.FileExtension;
+                result.ChapterWriterFactory = new ChapterWriterFactory<IfoChapterWriter>();
             }
 
             if ( _args["spf"] != null )
@@ -246,6 +224,7 @@ namespace Subwriter
 
             result.Recursive = (_args["r"] != null);
             result.Scenalyzer = (_args["scenalyzer"] != null);
+            result.IncludeDuplicates = (_args["id"] != null);
 
             result.Action = SubtitleArguments.ActionType.Process;
 

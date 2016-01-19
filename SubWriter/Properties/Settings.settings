@@ -1,0 +1,45 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="Subwriter" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="SpruceSubtitlePrefix" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">//Font select and font size
+$FontName       = Arial
+$FontSize       = 30
+
+//Character attributes (global)
+$Bold           = FALSE
+$UnderLined     = FALSE
+$Italic         = FALSE
+
+//Position Control
+$HorzAlign      = Center
+$VertAlign      = Bottom
+$XOffset        = 0
+$YOffset        = 0
+
+//Contrast Control
+$TextContrast           = 15
+$Outline1Contrast       = 8
+$Outline2Contrast       = 15
+$BackgroundContrast     = 0
+
+//Effects Control
+$ForceDisplay   = FALSE
+$FadeIn         = 10
+$FadeOut        = 10
+
+//Other Controls
+$TapeOffset          = FALSE
+//$SetFilePathToken  = &lt;&lt;:&gt;&gt;
+
+//Colors
+$ColorIndex1    = 0
+$ColorIndex2    = 1
+$ColorIndex3    = 2
+$ColorIndex4    = 3
+
+//Subtitles</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
