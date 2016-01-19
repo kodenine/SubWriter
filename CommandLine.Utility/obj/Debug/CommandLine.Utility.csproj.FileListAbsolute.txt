@@ -1,0 +1,5 @@
+G:\source\GitHub.com\SubWriter\CommandLine.Utility\bin\Debug\CommandLine.Utility.dll
+G:\source\GitHub.com\SubWriter\CommandLine.Utility\bin\Debug\CommandLine.Utility.pdb
+G:\source\GitHub.com\SubWriter\CommandLine.Utility\obj\Debug\CommandLine.Utility.csprojResolveAssemblyReference.cache
+G:\source\GitHub.com\SubWriter\CommandLine.Utility\obj\Debug\CommandLine.Utility.dll
+G:\source\GitHub.com\SubWriter\CommandLine.Utility\obj\Debug\CommandLine.Utility.pdb
