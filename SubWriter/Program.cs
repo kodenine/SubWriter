@@ -48,8 +48,20 @@ namespace Subwriter
             switch ( subWriterArguments.Action )
             {
                 case SubtitleArguments.ActionType.Process:
-                    ConsoleSubWriter subwriter = new ConsoleSubWriter();
-                    subwriter.Process();
+                    VideoProcessor subwriter = new VideoProcessor( subWriterArguments );
+                    subwriter.Status += ConsoleWriteStatus;
+                    bool success = subwriter.Process();
+                    subwriter.Status -= ConsoleWriteStatus;
+
+                    if ( success )
+                    {
+                        Console.WriteLine( "process completed successfully!" );
+                    }
+                    else
+                    {
+                        Console.WriteLine( "process was unsuccessful!" );
+                    }
+
                     break;
 
                 case default:
@@ -57,5 +69,10 @@ namespace Subwriter
                     break;
             }
 		}
+
+        static void ConsoleWriteStatus( VideoProcessor m, VideoProcessor.StatusEventHandler e )
+        {
+            Console.WriteLine( e.Message );
+        }
 	}
 }

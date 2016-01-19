@@ -69,6 +69,18 @@ namespace Subwriter
                     result.Success = false;
                     result.ValidationMessage = "No files were specified";
                 }
+
+                string subtitlePrefixFilename = (string)_args["spf"];
+                if ( !String.IsNullOrEmpty( subtitlePrefixFilename ) && 
+                     !subtitlePrefixFilename.Equals( "auto", StringComparison.OrdinalIgnoreCase ) )
+                {
+                    FileInfo subtitlePrefixFileInfo = new FileInfo( subtitlePrefixFilename );
+                    if ( !subtitlePrefixFileInfo.Exists )
+                    {
+                        result.Success = false;
+                        result.ValidationMessage = $"Subtitle prefix filename, '{subtitlePrefixFilename}' doesn't exist";
+                    }
+                }
             }
 
             return result;
@@ -186,10 +198,10 @@ namespace Subwriter
                 switch ( chapterFormatArg )
                 {
                     case "ifo":
-                        result.ChapterFormat = new IfoChapterFormat();
+                        result.ChapterFormat = new IfoChapterWriter();
                         break;
                     case "sm":
-                        result.ChapterFormat = new SpruceMaestroChapterFormat();
+                        result.ChapterFormat = new SpruceMaestroChapterWriter();
                         break;
                     default:
                         throw new ArgumentException( $"'{chapterFormatArg}' is not a supported chapter format", "chp" );
@@ -197,7 +209,7 @@ namespace Subwriter
             }
             else
             {
-                result.ChapterFormat = new IfoChapterFormat();
+                result.ChapterFormat = new IfoChapterWriter();
             }
 
             if ( Path.HasExtension( result.ChapterFileName ) )
@@ -213,11 +225,11 @@ namespace Subwriter
 
             if ( _args["spf"] != null )
             {
-                result.SubtitlePrefix = (string)_args["spf"];
+                result.SubtitlePrefixFilename = (string)_args["spf"];
             }
             else
             {
-                result.SubtitlePrefix = "auto";
+                result.SubtitlePrefixFilename = "auto";
             }
 
             result.SubDuration = 10;

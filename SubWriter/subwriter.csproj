@@ -96,15 +96,12 @@
     <Compile Include="AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="ChapterFormat.cs" />
+    <Compile Include="ChapterWriter.cs" />
     <Compile Include="FrameInfo.cs" />
     <Compile Include="FrameRateType.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="SubtitleArguments.cs" />
-    <Compile Include="SubtitleFormat.cs" />
-    <Compile Include="subwriter.cs">
-      <SubType>Code</SubType>
-    </Compile>
+    <Compile Include="SubtitleWriter.cs" />
     <Compile Include="VideoProcessor.cs" />
   </ItemGroup>
   <ItemGroup>
