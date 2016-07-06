@@ -19,11 +19,11 @@
     <RemoteDebugEnabled>false</RemoteDebugEnabled>
     <RemoteDebugMachine />
     <StartAction>Project</StartAction>
-    <StartArguments>/F:%2a.mpg,%2a.avi,%2a.m4v /scenalyzer</StartArguments>
+    <StartArguments>/F:%2a.mpg,%2a.avi,%2a.m4v,%2a.mp4,%2a.mov</StartArguments>
     <StartPage />
     <StartProgram />
     <StartURL />
-    <StartWorkingDirectory>D:\DVD Projects\2012 01-05 Spring\raw_dv</StartWorkingDirectory>
+    <StartWorkingDirectory>D:\DVD Projects\2015\video\</StartWorkingDirectory>
     <StartWithIE>false</StartWithIE>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">

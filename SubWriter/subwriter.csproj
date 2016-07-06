@@ -118,9 +118,9 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
-    <None Include="drivers\RegisterMp4.bat">
+    <Content Include="drivers\RegisterMp4.bat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Content Include="drivers\mp4demux.dll">

@@ -112,6 +112,20 @@ namespace Subwriter
                             if ( _args.Scenalyzer )
                             {
                                 formattedFilename = ScenalyzerFormat( formattedFilename );
+                            } else
+                            {
+                                string formattedFileDateTime = formattedFilename;
+                                if ( formattedFileDateTime.Contains( "(" ) )
+                                {
+                                    formattedFileDateTime = formattedFileDateTime.Substring( 0, formattedFileDateTime.IndexOf( "(" ) );
+                                }
+                                formattedFileDateTime = formattedFileDateTime.Replace( ".", ":" );
+                                
+                                DateTime fileDateTime;
+                                if ( DateTime.TryParse( formattedFileDateTime, out fileDateTime ) )
+                                {
+                                    formattedFilename = FormatDateTime( fileDateTime );
+                                }
                             }
                             fileCount++;
                             FrameInfo Start = new FrameInfo();
@@ -242,10 +256,15 @@ namespace Subwriter
             string myDateTimeValue = month + "/" + day + "/" + year + " " + mytime;
             DateTime myDateTime = Convert.ToDateTime( myDateTimeValue );
             // processing = String.Format( "{0:MMMM} {0:dd}, {0:yyyy}{1}", myDateTime, title );
-            processing = $"{myDateTime:MMMM} {myDateTime:dd}, {myDateTime:yyyy}";
+            processing = FormatDateTime( myDateTime );
             return processing;
         }
         
+        private string FormatDateTime( DateTime dateTime )
+        {
+            return $"{dateTime:MMMM} {dateTime:dd}, {dateTime:yyyy}";
+        }
+
         private void UpdateStatus( string message )
         {
             if ( Status != null )
